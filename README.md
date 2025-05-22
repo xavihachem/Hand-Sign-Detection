@@ -22,5 +22,5 @@ Hand Sign Detection is a computer vision project that recognizes and classifies 
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/stealthwhiz24/hand-sign-detection.git
-   cd hand-sign-detection
+   git clone https://github.com/xavihachem/Hand-Sign-Detection.git
+   cd Hand-Sign-Detection
