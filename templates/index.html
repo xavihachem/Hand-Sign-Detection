@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hand Sign Detector</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #4a4a4a;
+            margin-bottom: 30px;
+        }
+        .upload-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+        .upload-form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .file-input-container {
+            position: relative;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .file-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px dashed #ccc;
+            border-radius: 5px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .file-input:hover {
+            border-color: #7e57c2;
+        }
+        .upload-btn {
+            background-color: #7e57c2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .upload-btn:hover {
+            background-color: #673ab7;
+        }
+        .upload-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .result-container {
+            display: none;
+            background-color: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .result-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .images-container {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .image-box {
+            width: 48%;
+            text-align: center;
+        }
+        .image-box img {
+            max-width: 100%;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .sign-result {
+            font-size: 32px;
+            font-weight: bold;
+            margin-top: 20px;
+            padding: 15px 30px;
+            background-color: #e8eaf6;
+            border-radius: 10px;
+            color: #3f51b5;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .sign-description {
+            font-size: 18px;
+            margin: 15px 0 25px;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+            color: #555;
+            text-align: center;
+            max-width: 600px;
+            line-height: 1.5;
+        }
+        
+        .error-message {
+            color: #f44336;
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #ffebee;
+            border-radius: 5px;
+            display: none;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .loading-spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #7e57c2;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Hand Sign Detector</h1>
+        
+        <div class="upload-container">
+            <form id="uploadForm" class="upload-form">
+                <div class="file-input-container">
+                    <input type="file" id="fileInput" accept=".jpg,.jpeg,.png" class="file-input">
+                </div>
+                <button type="submit" id="uploadBtn" class="upload-btn" disabled>Detect Hand Sign</button>
+            </form>
+            
+            <div class="loading">
+                <div class="loading-spinner"></div>
+                <p>Processing image...</p>
+            </div>
+            
+            <div class="error-message" id="errorMessage"></div>
+        </div>
+        
+        <div class="result-container" id="resultContainer">
+            <div class="result-content">
+                <!-- No detection result text -->
+                
+                <div class="images-container">
+                    <div class="image-box">
+                        <h3>Original Image</h3>
+                        <img id="originalImage" src="" alt="Original Image">
+                    </div>
+                    <div class="image-box">
+                        <h3>Detected Hand Sign</h3>
+                        <img id="resultImage" src="" alt="Result Image">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('fileInput');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const uploadForm = document.getElementById('uploadForm');
+            const loading = document.querySelector('.loading');
+            const errorMessage = document.getElementById('errorMessage');
+            const resultContainer = document.getElementById('resultContainer');
+            const signResult = document.getElementById('signResult');
+            const signDescription = document.getElementById('signDescription');
+            const originalImage = document.getElementById('originalImage');
+            const resultImage = document.getElementById('resultImage');
+            
+            // No descriptions needed
+            
+            // Enable/disable upload button based on file selection
+            fileInput.addEventListener('change', function() {
+                uploadBtn.disabled = !fileInput.files.length;
+                errorMessage.style.display = 'none';
+                resultContainer.style.display = 'none';
+            });
+            
+            // Handle form submission
+            uploadForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                if (!fileInput.files.length) {
+                    return;
+                }
+                
+                const file = fileInput.files[0];
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                // Show loading spinner
+                loading.style.display = 'block';
+                errorMessage.style.display = 'none';
+                resultContainer.style.display = 'none';
+                uploadBtn.disabled = true;
+                
+                // Send the request
+                fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    loading.style.display = 'none';
+                    uploadBtn.disabled = false;
+                    
+                    if (data.error) {
+                        // Show error message
+                        errorMessage.textContent = data.error;
+                        errorMessage.style.display = 'block';
+                    } else {
+                        // No need to show sign name
+                        
+                        // No description needed
+                        
+                        originalImage.src = '/uploads/' + data.original_image;
+                        resultImage.src = '/results/' + data.result_image;
+                        resultContainer.style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    loading.style.display = 'none';
+                    uploadBtn.disabled = false;
+                    errorMessage.textContent = 'An error occurred during processing. Please try again.';
+                    errorMessage.style.display = 'block';
+                    console.error('Error:', error);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
